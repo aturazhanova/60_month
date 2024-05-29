@@ -1,0 +1,11 @@
+version: '3.8'
+
+services:
+  flask-app:
+    build: .
+    ports:
+      - "5001:5000"  # Change host port to 5001
+    volumes:
+      - .:/app
+    environment:
+      - FLASK_ENV=development

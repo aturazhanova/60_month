@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDF Processor</title>
+    <style>
+        body {
+            background-color: #f7fafc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            background-color: #fff;
+            padding: 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 16px;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-group label {
+            display: block;
+            color: #4a5568;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 4px;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+        .button {
+            background-color: #4299e1;
+            color: #fff;
+            font-weight: bold;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .button:hover {
+            background-color: #3182ce;
+        }
+        .result {
+            margin-top: 16px;
+            font-size: 18px;
+        }
+        .toast {
+            position: fixed;
+            bottom: 16px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 16px;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            color: #fff;
+            display: none;
+        }
+        .toast.show {
+            display: block;
+        }
+        .toast.success {
+            background-color: #48bb78;
+        }
+        .toast.error {
+            background-color: #f56565;
+        }
+        .loading-spinner {
+            display: none;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #4299e1;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 16px auto;
+        }
+        .loading-spinner.show {
+            display: inline-block;
+        }
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="title">PDF Processor</h1>
+        <div>
+            <div class="form-group">
+                <label for="fileInput">Choose a PDF file:</label>
+                <input type="file" id="fileInput" name="file">
+            </div>
+            <div>
+                <button id="submitButton" type="button" class="button">Submit</button>
+            </div>
+        </div>
+        <div id="resultText" class="result"></div>
+        <div id="loadingSpinner" class="loading-spinner"></div>
+    </div>
+    <div id="toast" class="toast"></div>
+    <script>
+        const submitButton = document.getElementById("submitButton");
+        submitButton.addEventListener("click", handleSubmit);
+
+        function showToast(message, isError = false) {
+            const toast = document.getElementById('toast');
+            toast.classList.remove('show', 'success', 'error');
+            toast.classList.add('show', isError ? 'error' : 'success');
+            toast.innerText = message;
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        async function handleSubmit(event) {
+            event.preventDefault();
+            console.log("Form submitted");
+
+            const fileInput = document.getElementById('fileInput');
+            const resultText = document.getElementById('resultText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+
+            if (fileInput.files.length === 0) {
+                showToast('No file selected.', true);
+                console.log("No file selected");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            console.log("Sending request to the server");
+            loadingSpinner.classList.add('show');
+
+            try {
+                const response = await fetch('http://127.0.0.1:5005/process-pdf', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                console.log("Response received", response);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log("JSON parsed", result);
+
+                if (result.result !== undefined) {
+                    resultText.innerText = result.result ? 'YES! In this file, more than 60 months' : 'NO! In this file, less than 60 months';
+                    showToast('File processed successfully.');
+                } else {
+                    showToast('An error occurred while processing the file.', true);
+                }
+            } catch (error) {
+                console.error("Error occurred", error);
+                showToast('An error occurred: ' + error.message, true);
+            } finally {
+                loadingSpinner.classList.remove('show');
+            }
+        }
+    </script>
+</body>
+</html>
